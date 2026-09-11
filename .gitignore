@@ -1,0 +1,26 @@
+# Credentials and tokens
+tokens.json
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env/
+
+# Data files (large CSVs)
+*.csv
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
