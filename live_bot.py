@@ -21,8 +21,8 @@ import threading
 # ============================================================
 
 SCHWAB_CONFIG = {
-    'app_key': 'YOUR_APP_KEY_HERE',      # From developer.schwab.com
-    'app_secret': 'YOUR_APP_SECRET_HERE', # From developer.schwab.com
+    'app_key': 'QbOoVDpyv2AqFwfSWgr2W3mrEB7hdBqJl0A4lEGHKXwZJLow',
+    'app_secret': 'sJhulVwHFITG0mU8lvXA5P3n9BV9tpaaUlKTzGWiWcenuorVOGn6bdxR8hyIGoFi',
     'redirect_uri': 'http://localhost:8080',
     'token_path': 'tokens.json',
     'paper_trading': True,                # Set to False when ready for live
