@@ -23,7 +23,7 @@ import threading
 SCHWAB_CONFIG = {
     'app_key': 'QbOoVDpyv2AqFwfSWgr2W3mrEB7hdBqJl0A4lEGHKXwZJLow',
     'app_secret': 'sJhulVwHFITG0mU8lvXA5P3n9BV9tpaaUlKTzGWiWcenuorVOGn6bdxR8hyIGoFi',
-    'redirect_uri': 'http://localhost:8080',
+    'redirect_uri': 'https://127.0.0.1:8080',
     'token_path': 'tokens.json',
     'paper_trading': True,                # Set to False when ready for live
 }
@@ -97,12 +97,29 @@ class SchwabAPI:
         # Open browser
         webbrowser.open(auth_url)
         
-        # Start local server to capture callback
+        # Start local server to capture callback (may fail if HTTPS redirect)
         code = self._capture_oauth_code()
         
         if not code:
             # Manual fallback
-            code = input("Enter the authorization code: ").strip()
+            print("\nIf you see an error page in your browser, look at the URL bar.")
+            print("You should see something like:")
+            print("  https://localhost:8080/?code=SOMECODE&session=...")
+            print("Copy the value after 'code=' and paste it below.\n")
+            raw = input("Enter the authorization code: ").strip()
+            # Extract code from URL if user pasted full URL
+            if 'code=' in raw:
+                from urllib.parse import urlparse, parse_qs
+                if raw.startswith('http'):
+                    query = urlparse(raw).query
+                else:
+                    query = raw.split('?')[-1] if '?' in raw else raw
+                params = parse_qs(query)
+                code = params.get('code', [''])[0]
+            else:
+                # Strip any trailing &session=... if present
+                code = raw.split('&')[0].strip()
+            print(f"Using code: {code[:20]}...")
         
         # Exchange code for tokens
         self._exchange_code_for_tokens(code)
@@ -129,11 +146,15 @@ class SchwabAPI:
             def log_message(self, format, *args):
                 pass  # Suppress logs
         
-        server = HTTPServer(('localhost', 8080), Handler)
-        server.timeout = timeout
-        
-        print("Waiting for authentication callback...")
-        server.handle_request()
+        try:
+            server = HTTPServer(('localhost', 8080), Handler)
+            server.timeout = timeout
+            
+            print("Waiting for authentication callback...")
+            server.handle_request()
+        except OSError as e:
+            print(f"Local server couldn't start: {e}")
+            print("You'll need to paste the code manually.")
         
         return code[0]
     
