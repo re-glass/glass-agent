@@ -225,7 +225,7 @@ class SchwabAPI:
         }
     
     def get_account_id(self):
-        """Get the account ID for trading."""
+        """Get the account hash for API calls and store account number."""
         if self.account_id:
             return self.account_id
         
@@ -237,7 +237,8 @@ class SchwabAPI:
         if response.status_code == 200:
             accounts = response.json()
             if accounts:
-                self.account_id = accounts[0].get('accountNumber')
+                self.account_id = accounts[0].get('hashValue')
+                self.account_number = accounts[0].get('accountNumber')
                 self.save_tokens()
                 return self.account_id
         
@@ -689,6 +690,10 @@ def main():
             
             # Wait before next iteration
             time.sleep(30)
+            
+            # Heartbeat: print a dot every 2 minutes to show alive
+            if int(time.time()) % 120 < 30:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 💓 Monitoring...")
     
     except KeyboardInterrupt:
         print("\n\nBot stopped by user.")
