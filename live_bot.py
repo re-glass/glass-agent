@@ -36,6 +36,7 @@ class SchwabAPI:
     def __init__(self, config):
         self.config = config
         self.base_url = 'https://api.schwabapi.com/v1'
+        self.market_data_url = 'https://api.schwabapi.com/marketdata/v1'
         self.access_token = None
         self.refresh_token = None
         self.token_expiry = None
@@ -265,7 +266,7 @@ class SchwabAPI:
     def get_price_history(self, symbol, period_type='day', period=1, frequency_type='minute', frequency=1):
         """Get price history for a symbol."""
         response = requests.get(
-            f"{self.base_url}/marketdata/{symbol}/pricehistory",
+            f"{self.market_data_url}/{symbol}/pricehistory",
             headers=self.get_headers(),
             params={
                 'periodType': period_type,
@@ -285,7 +286,7 @@ class SchwabAPI:
     def get_quote(self, symbol):
         """Get current quote for a symbol."""
         response = requests.get(
-            f"{self.base_url}/marketdata/{symbol}/quotes",
+            f"{self.market_data_url}/{symbol}/quotes",
             headers=self.get_headers()
         )
         
