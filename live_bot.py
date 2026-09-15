@@ -35,8 +35,9 @@ SCHWAB_CONFIG = {
 class SchwabAPI:
     def __init__(self, config):
         self.config = config
-        self.base_url = 'https://api.schwabapi.com/trader/v1'
+        self.base_url = 'https://api.schwabapi.com/v1'
         self.market_data_url = 'https://api.schwabapi.com/marketdata/v1'
+        self.trader_url = 'https://api.schwabapi.com/trader/v1'
         self.access_token = None
         self.refresh_token = None
         self.token_expiry = None
@@ -229,7 +230,7 @@ class SchwabAPI:
             return self.account_id
         
         response = requests.get(
-            f"{self.base_url}/accounts/accountNumbers",
+            f"{self.trader_url}/accounts/accountNumbers",
             headers=self.get_headers()
         )
         
@@ -251,7 +252,7 @@ class SchwabAPI:
             return None
         
         response = requests.get(
-            f"{self.base_url}/accounts/{account_id}",
+            f"{self.trader_url}/accounts/{account_id}",
             headers=self.get_headers(),
             params={'fields': 'positions'}
         )
@@ -329,7 +330,7 @@ class SchwabAPI:
             order['price'] = limit_price
         
         response = requests.post(
-            f"{self.base_url}/accounts/{account_id}/orders",
+            f"{self.trader_url}/accounts/{account_id}/orders",
             headers={**self.get_headers(), 'Content-Type': 'application/json'},
             json=order
         )
@@ -349,7 +350,7 @@ class SchwabAPI:
             return None
         
         response = requests.get(
-            f"{self.base_url}/accounts/{account_id}/orders",
+            f"{self.trader_url}/accounts/{account_id}/orders",
             headers=self.get_headers()
         )
         
