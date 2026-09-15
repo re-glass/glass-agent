@@ -35,7 +35,7 @@ SCHWAB_CONFIG = {
 class SchwabAPI:
     def __init__(self, config):
         self.config = config
-        self.base_url = 'https://api.schwabapi.com/v1'
+        self.base_url = 'https://api.schwabapi.com/trader/v1'
         self.market_data_url = 'https://api.schwabapi.com/marketdata/v1'
         self.access_token = None
         self.refresh_token = None
