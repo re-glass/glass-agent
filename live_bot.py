@@ -266,9 +266,10 @@ class SchwabAPI:
     def get_price_history(self, symbol, period_type='day', period=1, frequency_type='minute', frequency=1):
         """Get price history for a symbol."""
         response = requests.get(
-            f"{self.market_data_url}/{symbol}/pricehistory",
+            f"{self.market_data_url}/pricehistory",
             headers=self.get_headers(),
             params={
+                'symbol': symbol,
                 'periodType': period_type,
                 'period': period,
                 'frequencyType': frequency_type,
