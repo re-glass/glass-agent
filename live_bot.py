@@ -700,7 +700,10 @@ def main():
                     quote = api.get_quote(ticker)
                     if quote and ticker in quote:
                         last_price = quote[ticker].get('lastPrice', 0)
-                        status += f"{ticker}:${last_price:.0f} "
+                        # Fallback: try extended.lastPrice if lastPrice is 0
+                        if last_price == 0:
+                            last_price = quote[ticker].get('extended', {}).get('lastPrice', 0)
+                        status += f"{ticker}:${last_price:.2f} "
             print(status)
             
             # Wait before next iteration
