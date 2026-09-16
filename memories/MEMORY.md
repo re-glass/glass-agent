@@ -1,0 +1,11 @@
+FINRA Pattern Day Trader rule was repealed effective June 4, 2026. Brokers have until October 20, 2027 to fully implement new intraday margin standards. PDT $25k minimum and 3-day-trade-per-5-days limit no longer apply.
+§
+User is building automated trading bots (stocks and futures) via Schwab API. Active strategies: mean reversion (best performer), trend following, swing. Currently focused on futures (/YM, /GC, /ES, /NQ, /CL, /SI) for 24/7 trading. Account: ~$305 cash. Prefers paper trading before live. Likes concise responses. Gets frustrated with incorrect data (e.g., $0 prices, stale data). Expects proactive debugging. Code repo: https://github.com/re-glass/TradingBot-code.git. User communicates via short messages — keep responses focused. Key preference: show working output, not just descriptions.
+§
+User's GitHub username: re-glass. Repo: https://github.com/re-glass/TradingBot-code.git. Schwab API app status: Pending Review (market data access not yet active, causing 404s). User prefers fully autonomous trading, paper trading before live, and wants to seamlessly continue sessions.
+§
+User prefers: fully autonomous trading (no trade confirmations), paper trading before going live, code backups on GitHub, seamless session continuation. Trading style: day scalping, mean reversion, FAANG only. Risk: 2% per trade, 5% daily kill switch, max 2 positions. Account <$1000.
+§
+GitHub repo for scalping bot: https://github.com/re-glass/TradingBot-code.git. Schwab API app approved with MarketData + AccountsAndTrading scopes. User runs bot from /home/reg/scalping_bot/.
+§
+Session built FAANG mean reversion scalping bot → expanded to futures via Schwab API. Key findings: futures quotes return 404 (use price history), extended.lastPrice is stale (use quote.lastPrice), futures use /YM format not YM=F, account hashValue not accountNumber. Multi-strategy backtest: Mean Reversion on YM=F best (PF=2.68), Trend Following on GC=F (PF=1.41), Swing on GC=F (PF=1.23). Updated schwab-trader-api skill with all findings.

@@ -1,0 +1,14 @@
+model:
+  default: meituan/longcat-2.0:free
+  provider: nous
+  base_url: https://inference-api.nousresearch.com/v1
+agent:
+  max_turns: 150
+display:
+  tool_progress: all
+_config_version: 33
+session_reset:
+  mode: none
+onboarding:
+  seen:
+    tool_progress_prompt: true

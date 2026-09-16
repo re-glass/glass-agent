@@ -1,30 +1,52 @@
-# Credentials and tokens
-tokens.json
-positions.json
-.env
-*.pem
+# Auth and tokens
+auth.json
+auth.lock
+*.token
 *.key
+*.pem
 
-# Python
+# Cache and state
+cache/
+image_cache/
+audio_cache/
+sessions/
+logs/
+lsp/
 __pycache__/
 *.pyc
 *.pyo
-venv/
-.env/
+state.db
+state.db-shm
+state.db-wal
+verification_evidence.db
+context_length_cache.yaml
+provider_models_cache.json
+ollama_cloud_models_cache.json
+models_dev_cache.json
+.update_check
+processes.json
+.hermes_history
+pastes/
+images/
+sandboxes/
+shared/
 
-# Data files (large CSVs)
-*.csv
-
-# Logs
-*.log
+# Bin
+bin/
+hooks/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
-
-# Optimization results
+# Trading bot files (separate repo)
+trading_bot.py
+live_bot.py
+live_bot_futures.py
+optimize.py
+futures_backtest.py
+strategy_comparison.py
+enhanced_backtest.py
+positions.json
+tokens.json
 optimization_results.json
