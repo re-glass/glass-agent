@@ -1,25 +1,8 @@
 {
-  "positions": {
-    "/SI": {
-      "side": "long",
-      "qty": 22,
-      "entry": 64.15,
-      "sl": 63.88,
-      "tp": 64.69,
-      "entry_time": "2026-09-16T14:13:32.219890"
-    },
-    "/CL": {
-      "side": "long",
-      "qty": 54,
-      "entry": 102.15,
-      "sl": 102.04,
-      "tp": 102.37,
-      "entry_time": "2026-09-16T14:23:52.682003"
-    }
-  },
-  "daily_pnl": 0.0,
-  "total_pnl": 0.0,
+  "positions": {},
+  "daily_pnl": -114.25,
+  "total_pnl": -114.25,
   "account_value": 304.92,
   "date": "2026-09-16",
-  "timestamp": "2026-09-16T14:23:52.682016"
+  "timestamp": "2026-09-16T15:26:54.260274"
 }

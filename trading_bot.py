@@ -812,6 +812,7 @@ class TradingBot:
         """Main trading loop."""
         log.info("=" * 70)
         log.info("TRADING BOT STARTED")
+        self._first_loop = True
         log.info(f"Strategy: {self.strategy}")
         log.info(f"Tickers: {self.config.TICKERS}")
         log.info(f"Paper Trading: {self.config.PAPER_TRADING}")
@@ -831,6 +832,20 @@ class TradingBot:
                 
                 # Skip if at max positions
                 if self._check_max_positions():
+                    time.sleep(self.config.LOOP_INTERVAL)
+                    continue
+                
+                if self._first_loop:
+                    self._first_loop = False
+                    log.info("First loop complete — will enter positions on next loop")
+                    self._print_status()
+                    time.sleep(self.config.LOOP_INTERVAL)
+                    continue
+
+                # Check max positions BEFORE processing
+                if self._check_max_positions():
+                    log.status(f"Max positions reached ({len(self.paper_positions)}/{self.config.MAX_POSITIONS})")
+                    self._print_status()
                     time.sleep(self.config.LOOP_INTERVAL)
                     continue
                 
