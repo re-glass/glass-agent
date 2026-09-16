@@ -29,8 +29,8 @@ SCHWAB_CONFIG = {
     'paper_trading': True,
 }
 
-# Futures tickers via Schwab
-FUTURES_TICKERS = ['YM=F', 'GC=F', 'ES=F', 'NQ=F', 'CL=F', 'SI=F']
+# Futures tickers via Schwab (use / prefix for futures)
+FUTURES_TICKERS = ['/YM', '/GC', '/ES', '/NQ', '/CL', '/SI']
 
 # Strategy selection: 'mean_reversion', 'trend_following', 'swing'
 ACTIVE_STRATEGY = 'mean_reversion'
@@ -240,8 +240,8 @@ class SchwabAPI:
         
         print(f"Error getting account info: {response.status_code} {response.text}")
         return None
-    
     def get_price_history(self, symbol, period_type='day', period=5, frequency_type='minute', frequency=1):
+        """Get price history for a symbol."""
         response = requests.get(
             f"{self.market_data_url}/pricehistory",
             headers=self.get_headers(),
@@ -260,18 +260,26 @@ class SchwabAPI:
         print(f"Error getting price history for {symbol}: {response.status_code} {response.text}")
         return None
     
-    def get_quote(self, symbol):
-        response = requests.get(
-            f"{self.market_data_url}/{symbol}/quotes",
-            headers=self.get_headers()
-        )
+    def get_latest_price(self, symbol):
+        """Get latest price from most recent candle in price history."""
+        history = self.get_price_history(symbol, period_type='day', period=1, frequency_type='minute', frequency=1)
+        if not history or 'candles' not in history or not history['candles']:
+            return None, None, None
         
-        if response.status_code == 200:
-            return response.json()
+        candles = history['candles']
+        latest = candles[-1]
+        last_price = latest.get('close', 0)
         
-        print(f"Error getting quote for {symbol}: {response.status_code} {response.text}")
-        return None
-    
+        # Get previous candle for bid/ask approximation
+        if len(candles) >= 2:
+            prev = candles[-2]
+            bid = prev.get('close', last_price)
+            ask = last_price
+        else:
+            bid = last_price
+            ask = last_price
+        
+        return last_price, bid, ask
     def place_order(self, symbol, side, quantity, order_type='MARKET', limit_price=None):
         account_id = self.get_account_id()
         if not account_id:
@@ -479,13 +487,9 @@ def main():
                 if signal == 0:
                     continue
                 
-                quote = api.get_quote(ticker)
-                if not quote or ticker not in quote:
+                last_price, bid, ask = api.get_latest_price(ticker)
+                if last_price is None:
                     continue
-                
-                ticker_data = quote[ticker]
-                bid = ticker_data.get('quote', {}).get('bidPrice', 0)
-                ask = ticker_data.get('quote', {}).get('askPrice', 0)
                 
                 if signal == 1:
                     entry_price = ask
@@ -539,13 +543,9 @@ def main():
         # Monitor exits
         positions_to_close = []
         for ticker, pos in paper_positions.items():
-            quote = api.get_quote(ticker)
-            if not quote or ticker not in quote:
+            last_price, bid, ask = api.get_latest_price(ticker)
+            if last_price is None:
                 continue
-            
-            last_price = quote[ticker].get('quote', {}).get('lastPrice', 0)
-            if last_price == 0:
-                last_price = quote[ticker].get('extended', {}).get('lastPrice', 0)
             
             if ACTIVE_STRATEGY == 'swing' and (datetime.now() - pos['entry_time']).days >= 3:
                 if pos['side'] == 'long':
@@ -595,11 +595,9 @@ def main():
                 pos = paper_positions[ticker]
                 status += f"{ticker}:{pos['side'][0].upper()}@{pos['entry']:.0f} "
             else:
-                quote = api.get_quote(ticker)
-                if quote and ticker in quote:
-                    last_price = quote[ticker].get('quote', {}).get('lastPrice', 0)
-                    if last_price == 0:
-                        last_price = quote[ticker].get('extended', {}).get('lastPrice', 0)
+                last_price, bid, ask = api.get_latest_price(ticker)
+                if last_price is None:
+                    last_price = pos['entry']
                     status += f"{ticker}:${last_price:.0f} "
         print(status)
         
