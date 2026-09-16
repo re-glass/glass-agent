@@ -596,9 +596,10 @@ def main():
                 status += f"{ticker}:{pos['side'][0].upper()}@{pos['entry']:.0f} "
             else:
                 last_price, bid, ask = api.get_latest_price(ticker)
-                if last_price is None:
-                    last_price = pos['entry']
+                if last_price is not None:
                     status += f"{ticker}:${last_price:.0f} "
+                else:
+                    status += f"{ticker}:? "
         print(status)
         
         time.sleep(30)
