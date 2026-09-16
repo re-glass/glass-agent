@@ -1,218 +1,192 @@
 # FAANG Mean Reversion Scalping Strategy
 ## Complete Reference Document
-### Created: 2026-09-11
+### Last Updated: 2026-09-15
 
 ---
 
-## 1. ACCOUNT & RISK PARAMETERS
+## Overview
 
-- **Broker:** Schwab (official API, OAuth2)
-- **Account Size:** < $1,000
-- **Account Type:** (to be confirmed - cash or margin)
-- **Pattern Day Trader Rule:** Repealed as of June 4, 2026 (FINRA replaced with intraday margin standards, phase-in until Oct 2027)
+A production-ready automated trading bot supporting:
+- **Markets:** FAANG stocks and Futures (YM, GC, ES, NQ, CL, SI)
+- **Strategies:** Mean Reversion, Trend Following, Swing
+- **Broker:** Charles Schwab (official API, OAuth2)
+- **Safety:** Position persistence, graceful shutdown, risk management
 
-### Risk Rules
+---
+
+## Project Structure
+
+```
+scalping_bot/
+├── trading_bot.py           ← UNIFIED BOT (USE THIS)
+├── optimize.py              ← Parameter optimization tool
+├── strategy_comparison.py   ← Backtest all strategies on futures + stocks
+├── futures_backtest.py      ← Mean reversion backtest on futures
+├── enhanced_backtest.py     ← Original FAANG backtest + optimization
+├── live_bot_futures.py      ← Older futures-specific version
+├── FAANG_SCALPING_STRATEGY.md ← This document
+├── README.md                ← Quick start guide
+├── requirements.txt         ← Python dependencies
+└── positions.json           ← Active position tracking
+```
+
+---
+
+## Quick Start
+
+### Install
+```bash
+cd /home/reg/scalping_bot
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Configure
+Edit `trading_bot.py` lines 18-21:
+```python
+# For stocks:
+TICKERS = ['AAPL', 'GOOGL', 'META', 'AMZN', 'NFLX']
+
+# For futures (default):
+TICKERS = ['/YM', '/GC', '/ES', '/NQ', '/CL', '/SI']
+
+# Strategy: 'mean_reversion', 'trend_following', 'swing'
+STRATEGY = 'mean_reversion'
+```
+
+### Run
+```bash
+python3 trading_bot.py
+```
+
+---
+
+## Account & Risk Parameters
+
 | Parameter | Value |
 |-----------|-------|
-| Risk per Trade | 2% of account |
-| Max Daily Loss | 5% (kill switch) |
-| Max Positions | 2 concurrent |
-| Strategy | Mean Reversion ONLY (trend following removed) |
+| **Broker** | Schwab (official API, OAuth2) |
+| **Account Size** | ~$305 (paper trading) |
+| **Pattern Day Trader Rule** | Repealed as of June 4, 2026 |
+| **Risk per Trade** | 2% of account |
+| **Max Daily Loss** | 5% (kill switch) |
+| **Max Positions** | 2 concurrent |
 
 ---
 
-## 2. STRATEGY SPECIFICATION
+## Strategy Specifications
 
-### Tickers
-FAANG: AAPL, GOOGL, META, AMZN, NFLX
+### Mean Reversion (Scalping)
+**Timeframe:** 1-minute bars
 
-### Timeframe
-1-minute bars
-
-### Indicators Used
-- **VWAP** (daily reset) - anchor for mean reversion
-- **Bollinger Bands** (20-period, 2 std dev) - overextension detection
-- **RSI** (14-period) - momentum confirmation
-- **ATR** (14-period) - stop loss / profit target calculation
-
-### Entry Rules (Mean Reversion Only)
-
-**LONG Entry (all 3 conditions must be met):**
+**LONG Entry (all conditions must be met):**
 1. Price deviation from VWAP < -0.3% (price below VWAP)
-2. RSI < 30 (oversold)
+2. RSI < 25 (oversold)
 3. Bollinger Bands %B < 0.1 (price near lower band)
 
-**SHORT Entry (all 3 conditions must be met):**
+**SHORT Entry (all conditions must be met):**
 1. Price deviation from VWAP > +0.3% (price above VWAP)
-2. RSI > 65 (overbought)
+2. RSI > 75 (overbought)
 3. Bollinger Bands %B > 0.9 (price near upper band)
 
-### Exit Rules
-- **Stop Loss:** Entry price ± (1.0 x ATR) [optimized from 1.5]
-- **Take Profit:** Entry price ± (1.5 x ATR) [optimized from 2.0]
-- **Market Close:** All positions closed at 3:59 PM ET
+**Exit Rules:**
+- Stop Loss: Entry price ± (1.0 x ATR)
+- Take Profit: Entry price ± (2.0 x ATR) ← Optimized from 1.5
+- Market Close: All positions closed at 4:00 PM (stocks only)
 
-### Position Sizing
-```
-risk_amount = account_value * 0.02
-stop_distance = ATR * 1.0
-qty = max(1, int(risk_amount / stop_distance))
-```
+### Trend Following (Breakout/Pullback)
+**Timeframe:** 5-minute bars
 
----
+**Logic:**
+- Fast EMA > Slow EMA = uptrend
+- Enter on pullback to fast EMA in direction of trend
+- SL: 1.5x ATR | TP: 2.0x ATR
 
-## 3. BACKTEST RESULTS
+### Swing Trading (Multi-day)
+**Timeframe:** 1-hour bars
 
-### Original Settings (1.5x SL, 2.0x TP, RSI 30/70)
-- **7 days, 319 trades**
-- Total P&L: +$399.39
-- Win Rate: 45.8%
-- Profit Factor: 1.12
-- Final Capital: $1,399.39
-
-### Optimized Settings (1.0x SL, 1.5x TP, RSI 30/65)
-- **48 days, 1,015 trades**
-- Total P&L: +$1,695.87
-- Win Rate: 43.5%
-- Profit Factor: 1.15
-- Max Drawdown: -$593.13
-- Final Capital: $2,695.87
-
-### Per-Ticker Performance (Optimized)
-| Ticker | Trades | P&L | Win Rate |
-|--------|--------|-----|----------|
-| META | 268 | +$1,057.72 | Best performer |
-| GOOGL | 166 | +$525.56 | |
-| NFLX | 223 | +$243.72 | |
-| AMZN | 159 | +$71.26 | |
-| AAPL | 199 | -$202.40 | **Losing ticker** |
-
-### Trade Distribution
-- **Winning trades:** 442 (43.5%) — avg win $29.42
-- **Losing trades:** 573 (56.5%) — avg loss -$19.73
-- **Reward-to-Risk:** 1.49:1
-- **Max Win Streak:** 11
-- **Max Loss Streak:** 12
-- **Shorts outperformed Longs:** $1,390 vs $305
-
-### Exit Analysis
-| Exit Reason | Count | Avg P&L |
-|-------------|-------|---------|
-| Take Profit | 435 (42.9%) | +$29.64 |
-| Stop Loss | 570 (56.2%) | -$19.79 |
-| Market Close | 10 (1.0%) | +$8.04 |
+**Logic:**
+- EMA trend + RSI reset (40-60 range)
+- Hold for up to 3 days
+- SL: 1.5x ATR | TP: 2.0x ATR
 
 ---
 
-## 4. PARAMETER OPTIMIZATION
+## Optimized Parameters
 
-Tested 81 combinations of:
-- SL Multiplier: [1.0, 1.5, 2.0]
-- TP Multiplier: [1.5, 2.0, 2.5]
-- RSI Oversold: [25, 30, 35]
-- RSI Overbought: [65, 70, 75]
+Found via 1296-combination grid search on 6 futures (14 days of 1-min data):
 
-**Top 3 Parameter Sets:**
-1. SL=1.0, TP=1.5, RSI=30/65 → P&L: +$1,695.87
-2. SL=1.0, TP=1.5, RSI=35/65 → P&L: +$1,301.46
-3. SL=1.0, TP=2.0, RSI=30/65 → P&L: +$1,158.90
+| Parameter | Original | Optimized |
+|-----------|----------|-----------|
+| ATR SL | 1.5x | 1.0x |
+| ATR TP | 2.0x | 2.0x |
+| RSI Oversold | 30 | 25 |
+| RSI Overbought | 65 | 75 |
+| BB Std Dev | 2.0 | 1.5 |
+| VWAP Deviation | 0.3% | 0.3% |
 
----
-
-## 5. FILES & LOCATIONS
-
-### Scripts
-- `/home/reg/scalping_backtest.py` — Original backtest (mean reversion only, 7 days)
-- `/home/reg/enhanced_backtest.py` — Full optimization backtest (48 days, 81 param combos)
-
-### Output Files
-- `/home/reg/backtest_results.csv` — Trade details from original backtest
-- `/home/reg/optimization_results.csv` — All 81 parameter combinations ranked
-- `/home/reg/best_param_trades.csv` — Trade details from best parameter run
-
-### Virtual Environment
-- `/home/reg/venv/` — Python venv with yfinance, pandas, numpy installed
-- Activate: `source /home/reg/venv/bin/activate`
+**Results:** PF: 1.39 | P&L: $2,199 | Win%: 40.4% | Max Drawdown: $406
 
 ---
 
-## 6. NEXT STEPS (IN ORDER)
+## Safety Features
 
-### Immediate
-1. **Review this document** and confirm all parameters
-2. **Open Schwab account** (if not already done) and apply for API access at developer.schwab.com
-3. **Set up paper trading** on Schwab — test with fake money first
+### Graceful Shutdown
+On kill (Ctrl+C or `kill` command), the bot:
+1. Receives shutdown signal
+2. Closes all open positions at market price
+3. Places closing orders (if live trading)
+4. Saves final state to `positions.json`
+5. Exits cleanly
 
-### Before Live Trading
-4. **Paper trade for 2-4 weeks** using the exact optimized parameters
-5. **Consider dropping AAPL** — it was the only losing ticker
-6. **Implement 5% daily loss limit** as a hard kill switch in the live trading script
-7. **Build the live trading script** using Schwab's official API:
-   - OAuth2 authentication
-   - Real-time 1-minute bar streaming
-   - Order placement (market/limit)
-   - Position tracking
-   - Daily P&L monitoring
+### Position Persistence
+- Every position change saved to `positions.json`
+- On restart from same day, positions are restored
+- Prevents position loss on crash
 
-### Risk Management Reminders
-- With $1,000: 2% risk = $20 per trade
-- 5% daily loss limit = $50 max loss per day
-- 2 positions max, but FAANG stocks are highly correlated (effectively 1 bet)
-- Consider reducing to 1 position max for live trading
+### Risk Management
+- 2% risk per trade (position sized to ATR)
+- 5% daily loss limit (kill switch)
+- Max 2 concurrent positions
+- Duplicate per-ticker blocking
+- Market close position closing
 
 ---
 
-## 7. SCHWAB API NOTES
+## API Endpoints (Schwab)
 
-- **API Docs:** https://developer.schwab.com/
-- **Auth:** OAuth2 (requires callback URL, can use localhost for personal use)
-- **Capabilities:** Market data, account info, order placement, order status
-- **Paper Trading:** Schwab supports paper trading accounts
-- **Rate Limits:** Check current docs (typically 120 requests/minute)
+| Category | Endpoint |
+|----------|----------|
+| OAuth | `https://api.schwabapi.com/v1/oauth/authorize` |
+| Market Data | `https://api.schwabapi.com/marketdata/v1/pricehistory` |
+| Trader | `https://api.schwabapi.com/trader/v1/accounts/...` |
 
----
-
-## 8. CONVERSATION HISTORY
-
-Key decisions made:
-- Started with Robinhood → switched to Schwab (official API)
-- Started with PDT rule concern → confirmed rule repealed June 2026
-- Started with mean reversion + trend following → killed trend following (was losing money)
-- Started with 7 days data → expanded to 48 days
-- Started with default parameters → optimized via 81-combination grid search
-- Confirmed: fully autonomous execution (no confirmation per trade)
+**Futures Symbol Format:**
+- Schwab: `/YM`, `/GC`, `/ES`, `/NQ`, `/CL`, `/SI`
+- yfinance: `YM=F`, `GC=F`, `ES=F`, `NQ=F`, `CL=F`, `SI=F`
 
 ---
 
-## 9. RESUMING THIS WORK
+## Current Performance (Paper Trading)
 
-### Status: Waiting for Schwab API Access
-- **Action required:** Complete app registration at https://developer.schwab.com/
-- **Redirect URI:** `http://localhost:8080`
-- **Pending:** App Key and App Secret from Schwab
-
-### To continue on this machine:
-1. Open terminal
-2. Start Hermes
-3. Say something like: "Let's continue the FAANG scalping strategy work"
-4. I'll use session_search to find this conversation and pick up where we left off
-
-### What's ready to go:
-- `/home/reg/scalping_bot/live_bot.py` — Fully written and tested (6/6 tests pass)
-- `/home/reg/scalping_bot/requirements.txt` — Dependencies ready to install
-- All strategy parameters finalized from 81-combination optimization
-- Reference document: `/home/reg/FAANG_SCALPING_STRATEGY.md`
-
-### Next steps after API approval:
-1. Save App Key and Secret into `SCHWAB_CONFIG` in `live_bot.py`
-2. Run the bot with `paper_trading: True` first
-3. Authenticate via OAuth2 (browser opens, log in to Schwab)
-4. Verify paper trades flow correctly
-5. After 2-4 weeks of successful paper trading, consider live trading
+| Trade | Ticker | Side | Entry | Exit | P&L |
+|-------|--------|------|-------|------|-----|
+| 1 | GC | Short | $4397.00 | $4392.89 | +$7.82 |
+| 2 | CL | Long | $102.31 | $102.44 | +$8.97 |
+| **Total** | | | | | **+$16.79** |
 
 ---
 
-*Document generated by Hermes Agent on 2026-09-11*
-*Last updated: 2026-09-11 — Waiting for Schwab API credentials*
+## Notes
+
+- The bot runs silently — only prints on signals, exits, and status updates
+- Status line prints every 30 seconds with live prices
+- Paper trading mode is ON — no real orders placed
+- PDT rule no longer applies (repealed June 2026)
+
+---
+
+*Document generated by Hermes Agent on 2026-09-15*
 *Strategy is experimental — past backtest results do not guarantee future performance*
 *Always paper trade before risking real capital*

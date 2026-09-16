@@ -1,5 +1,6 @@
 # Credentials and tokens
 tokens.json
+positions.json
 .env
 *.pem
 *.key
@@ -24,3 +25,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Optimization results
+optimization_results.json

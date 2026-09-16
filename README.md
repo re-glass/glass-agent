@@ -1,35 +1,48 @@
-# TradingBot-code
+# Scalping Bot — Unified Trading Bot
 
-FAANG Mean Reversion Scalping Bot with Schwab API
-
-## Structure
-
-- `live_bot.py` — Main trading bot (verified, 6/6 tests pass)
-- `enhanced_backtest.py` — Full optimization backtest (48 days, 81 parameter combos)
-- `FAANG_SCALPING_STRATEGY.md` — Complete strategy reference document
-- `requirements.txt` — Python dependencies
-
-## Status
-
-- Strategy: Mean Reversion only (trend following removed — was losing money)
-- Entry: price >0.3% from VWAP + RSI <30 or >65 + BB %B <0.1 or >0.9
-- Exit: SL=1.0x ATR, TP=1.5x ATR
-- Risk: 2% per trade, 5% daily kill switch, max 2 positions
-- Backtest: 48 days, 1015 trades, +$1695 P&L, Profit Factor=1.15
-- **Pending:** Schwab API credentials at developer.schwab.com
+A professional-grade automated trading bot for stocks and futures via Schwab API.
 
 ## Quick Start
 
 ```bash
-pip install -r requirements.txt
-# Add your Schwab App Key/Secret to live_bot.py
-python live_bot.py
+cd /home/reg/scalping_bot
+source venv/bin/activate
+python3 trading_bot.py
 ```
 
-## Tickers
+## Features
 
-AAPL, GOOGL, META, AMZN, NFLX
+- **Markets:** FAANG stocks, Futures (YM, GC, ES, NQ, CL, SI)
+- **Strategies:** Mean Reversion, Trend Following, Swing
+- **Safety:** Graceful shutdown, position persistence, risk management
+- **Optimization:** Automated parameter grid search
+
+## Configuration
+
+Edit `trading_bot.py`:
+
+```python
+# Markets
+TICKERS = ['/YM', '/GC', '/ES', '/NQ', '/CL', '/SI']  # Futures
+# TICKERS = ['AAPL', 'GOOGL', 'META', 'AMZN', 'NFLX']  # Stocks
+
+# Strategy
+STRATEGY = 'mean_reversion'  # or 'trend_following' or 'swing'
+
+# Safety
+PAPER_TRADING = True  # Set to False only after thorough testing
+```
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `trading_bot.py` | Main bot (USE THIS) |
+| `optimize.py` | Parameter optimization |
+| `strategy_comparison.py` | Backtest strategies on futures + stocks |
+| `futures_backtest.py` | Backtest mean reversion on futures |
+| `enhanced_backtest.py` | Backtest on stocks with optimization |
 
 ## Disclaimer
 
-Strategy is experimental. Past backtest results do not guarantee future performance. Always paper trade before risking real capital.
+This is experimental software. Past backtest results do not guarantee future performance. Always paper trade before risking real capital.
