@@ -12,6 +12,7 @@ import json
 import time
 import os
 import sys
+import signal
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List, Tuple
 import urllib.parse
@@ -518,6 +519,113 @@ class TradingBot:
         
         # Load account info
         self._update_account()
+        
+        # Load saved positions (in case of restart)
+        self._load_positions()
+        
+        # Setup signal handlers for graceful shutdown
+        self._setup_signal_handlers()
+    
+    def _setup_signal_handlers(self):
+        """Setup handlers for graceful shutdown."""
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGHUP, self._signal_handler)
+    
+    def _signal_handler(self, signum, frame):
+        """Handle shutdown signals."""
+        sig_name = signal.Signals(signum).name
+        log.warn(f"Received {sig_name} — initiating graceful shutdown...")
+        self._close_all_positions()
+        log.info("All positions closed. Exiting.")
+        sys.exit(0)
+    
+    def _close_all_positions(self):
+        """Close all open positions at market price."""
+        if not self.paper_positions:
+            log.info("No positions to close.")
+            return
+        
+        log.warn(f"Closing {len(self.paper_positions)} position(s)...")
+        
+        for ticker, pos in list(self.paper_positions.items()):
+            try:
+                # Get latest price
+                last_price, _, _ = self.api.get_latest_price(ticker)
+                if last_price is None:
+                    last_price = pos['entry']
+                
+                # Calculate P&L
+                pnl = self._calc_pnl(pos, last_price)
+                self.daily_pnl += pnl
+                self.total_pnl += pnl
+                
+                log.trade(f"[CLOSED] {ticker}: {pos['side']} @ {pos['entry']:.2f} -> {last_price:.2f}, P&L: ${pnl:.2f}")
+                
+                # If live trading, place closing order
+                if not self.config.PAPER_TRADING:
+                    close_side = 'SELL' if pos['side'] == 'long' else 'BUY'
+                    self.api.place_order(ticker, close_side, pos['qty'])
+                
+            except Exception as e:
+                log.error(f"Error closing {ticker}: {e}")
+        
+        self.paper_positions.clear()
+        self._save_positions()
+        log.info(f"All positions closed. Total P&L: ${self.total_pnl:.2f}")
+    
+    def _save_positions(self):
+        """Save positions to file for persistence."""
+        # Convert datetime objects to strings for JSON serialization
+        positions_copy = {}
+        for ticker, pos in self.paper_positions.items():
+            pos_copy = pos.copy()
+            if 'entry_time' in pos_copy and isinstance(pos_copy['entry_time'], datetime):
+                pos_copy['entry_time'] = pos_copy['entry_time'].isoformat()
+            positions_copy[ticker] = pos_copy
+        
+        data = {
+            'positions': positions_copy,
+            'daily_pnl': self.daily_pnl,
+            'total_pnl': self.total_pnl,
+            'account_value': self.account_value,
+            'date': self.today.isoformat(),
+            'timestamp': datetime.now().isoformat(),
+        }
+        try:
+            with open('positions.json', 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            log.error(f"Failed to save positions: {e}")
+    
+    def _load_positions(self):
+        """Load positions from file (for restart recovery)."""
+        if not os.path.exists('positions.json'):
+            return
+        
+        try:
+            with open('positions.json', 'r') as f:
+                data = json.load(f)
+            
+            saved_date = data.get('date')
+            if saved_date != self.today.isoformat():
+                log.info("Saved positions are from old day, clearing.")
+                os.remove('positions.json')
+                return
+            
+            positions = data.get('positions', {})
+            if positions:
+                # Convert entry_time strings back to datetime
+                for ticker, pos in positions.items():
+                    if 'entry_time' in pos and isinstance(pos['entry_time'], str):
+                        pos['entry_time'] = datetime.fromisoformat(pos['entry_time'])
+                self.paper_positions = positions
+                self.daily_pnl = data.get('daily_pnl', 0.0)
+                self.total_pnl = data.get('total_pnl', 0.0)
+                log.info(f"Loaded {len(positions)} saved position(s)")
+        
+        except Exception as e:
+            log.error(f"Failed to load positions: {e}")
     
     def _update_account(self):
         """Update account balance."""
@@ -532,6 +640,7 @@ class TradingBot:
         self.today = datetime.now().date()
         self.daily_pnl = 0.0
         self.paper_positions.clear()
+        self._save_positions()
         log.info(f"--- New Day: {self.today} ---")
     
     def _check_daily_loss(self) -> bool:
@@ -606,6 +715,7 @@ class TradingBot:
                 'side': side, 'qty': qty, 'entry': entry_price,
                 'sl': sl, 'tp': tp, 'entry_time': datetime.now()
             }
+            self._save_positions()
             
         except Exception as e:
             log.error(f"Error processing {ticker}: {e}")
@@ -663,6 +773,8 @@ class TradingBot:
         # Clean up closed positions
         for ticker in to_close:
             self.paper_positions.pop(ticker, None)
+        if to_close:
+            self._save_positions()
     
     def _calc_pnl(self, pos: dict, exit_price: float) -> float:
         """Calculate P&L for a position."""
@@ -675,6 +787,7 @@ class TradingBot:
         """Close a position and update P&L."""
         self.daily_pnl += pnl
         self.total_pnl += pnl
+        self._save_positions()
         log.info(f"  Daily P&L: ${self.daily_pnl:.2f} | Total P&L: ${self.total_pnl:.2f}")
     
     def _print_status(self):
