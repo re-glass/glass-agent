@@ -688,12 +688,23 @@ def main():
                 paper_positions.clear()
                 print(f"\n--- Market Closed. Daily P&L: ${daily_pnl:.2f}, Total P&L: ${total_pnl:.2f} ---\n")
             
+            # Print status line every loop
+            now = datetime.now()
+            status = f"[{now.strftime('%H:%M:%S')}] "
+            for ticker in tickers:
+                if ticker in paper_positions:
+                    pos = paper_positions[ticker]
+                    status += f"{ticker}:{pos['side'][0].upper()}@{pos['entry']:.0f} "
+                else:
+                    # Get last known price from recent API call
+                    quote = api.get_quote(ticker)
+                    if quote and ticker in quote:
+                        last_price = quote[ticker].get('lastPrice', 0)
+                        status += f"{ticker}:${last_price:.0f} "
+            print(status)
+            
             # Wait before next iteration
             time.sleep(30)
-            
-            # Heartbeat: print a dot every 2 minutes to show alive
-            if int(time.time()) % 120 < 30:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] 💓 Monitoring...")
     
     except KeyboardInterrupt:
         print("\n\nBot stopped by user.")
