@@ -45,12 +45,12 @@ class Config:
     MAX_DAILY_LOSS = 0.05  # 5% of account
     MAX_POSITION_SIZE = 0.10  # 10% of account per position
     
-    # Strategy Parameters
+    # Strategy Parameters (OPTIMIZED)
     ATR_SL_MULT = 1.0
-    ATR_TP_MULT = 1.5
-    RSI_OVERSOLD = 30
-    RSI_OVERBOUGHT = 65
-    BB_STD = 2.0
+    ATR_TP_MULT = 2.0  # Wider TP for futures trends
+    RSI_OVERSOLD = 25   # More selective entries
+    RSI_OVERBOUGHT = 75
+    BB_STD = 1.5        # Tighter bands for futures volatility
     VWAP_DEVIATION = 0.3
     
     # Swing Strategy
