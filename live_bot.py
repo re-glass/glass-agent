@@ -551,9 +551,10 @@ def main():
                     if not quote:
                         continue
                     
+                    # Extract LIVE quote data (not stale extended)
                     ticker_data = quote.get(ticker, {})
-                    bid = ticker_data.get('bidPrice', 0)
-                    ask = ticker_data.get('askPrice', 0)
+                    bid = ticker_data.get('quote', {}).get('bidPrice', 0)
+                    ask = ticker_data.get('quote', {}).get('askPrice', 0)
                     
                     if signal == 1:
                         entry_price = ask
@@ -632,10 +633,11 @@ def main():
                 quote = api.get_quote(ticker)
                 if not quote:
                     continue
+                # Get LIVE price for exit check
                 ticker_data = quote.get(ticker, {})
-                last_price = ticker_data.get('lastPrice', 0)
-                bid = ticker_data.get('bidPrice', 0)
-                ask = ticker_data.get('askPrice', 0)
+                last_price = ticker_data.get('quote', {}).get('lastPrice', 0)
+                if last_price == 0:
+                    last_price = ticker_data.get('extended', {}).get('lastPrice', 0)
                 
                 if pos['side'] == 'long':
                     # Check stop loss
@@ -677,7 +679,11 @@ def main():
                 for ticker, pos in list(paper_positions.items()):
                     quote = api.get_quote(ticker)
                     if quote:
-                        last_price = quote.get(ticker, {}).get('lastPrice', pos['entry'])
+                        # Get LIVE price for market close
+                        ticker_data = quote.get(ticker, {})
+                        last_price = ticker_data.get('quote', {}).get('lastPrice', pos['entry'])
+                        if last_price == 0:
+                            last_price = ticker_data.get('extended', {}).get('lastPrice', pos['entry'])
                         if pos['side'] == 'long':
                             pnl = (last_price - pos['entry']) * pos['qty']
                         else:
@@ -699,10 +705,11 @@ def main():
                     # Get last known price from recent API call
                     quote = api.get_quote(ticker)
                     if quote and ticker in quote:
-                        last_price = quote[ticker].get('lastPrice', 0)
-                        # Fallback: try extended.lastPrice if lastPrice is 0
+                        # Get LIVE price from quote.lastPrice, fallback to extended
+                        ticker_data = quote[ticker]
+                        last_price = ticker_data.get('quote', {}).get('lastPrice', 0)
                         if last_price == 0:
-                            last_price = quote[ticker].get('extended', {}).get('lastPrice', 0)
+                            last_price = ticker_data.get('extended', {}).get('lastPrice', 0)
                         status += f"{ticker}:${last_price:.2f} "
             print(status)
             
