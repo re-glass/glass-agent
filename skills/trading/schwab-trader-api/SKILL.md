@@ -147,6 +147,23 @@ Using `/v1/` for everything causes 404s on all market data endpoints.
 ### Account Hash vs Plain Number (Critical)
 `/accounts/accountNumbers` returns both `accountNumber` and `hashValue`. **Use `hashValue`** for all account-specific endpoints. Plain `accountNumber` returns `400 Invalid account number`.
 
+### Schwab API Rejects `fields` Query Param (Critical)
+Schwab returns `400 Bad Request` with a cryptic error when you pass `?fields=portfolio` or `?fields=<key>`. **Do not use the `fields` parameter.** Fetch the full account response and parse it manually:
+```python
+r = requests.get(f'https://api.schwabapi.com/trader/v1/accounts/{hash}', headers=headers, timeout=10)
+body = r.json()
+acct = body.get('securitiesAccount') or body
+positions = acct.get('positions', [])
+balances = acct.get('currentBalances') or acct.get('initialBalances') or {}
+cash = balances.get('cashAvailableForTrading') or balances.get('availableFunds') or 0.0
+```
+
+### Tick/Data Refresh Resilience
+`tick()` must always reschedule the next call even if `fetch_data_sync()` throws. Otherwise the GUI freezes on the first error.
+
+### Stop Bot Button State
+`stop_bot()` must set `state['bot_running']=False` and `status='idle'` immediately — users reject delays. Use a `_bot_run_wrapper()` that also resets state on natural exit.
+
 ### Price History Symbol Parameter
 `pricehistory` takes `symbol` as a **query parameter**, not a path parameter:
 ```
@@ -231,6 +248,48 @@ Top performers from a session backtest:
 - **Futures quotes return 404** — use `get_latest_price()` with price history for all price data
 - **Futures symbol format:** Use `/YM`, `/GC`, `/ES` (not `YM=F`) for Schwab API price history
 
+## Cross-Platform GUI
+
+For building a native-window dashboard that runs on any PC (Windows, macOS, Linux), use **Flask + pywebview** instead of tkinter/PyQt:
+
+- Flask serves a dark dashboard on localhost
+- pywebview opens a native window (WebKitGTK on Linux, WebKit on macOS, Edge on Windows)
+- JS frontend polls `/api/scene` every 3s and injects HTML into `#root`
+- `launch.sh` in project root: `chmod +x launch.sh && ./launch.sh`
+- Dashboard title: **GlassTB** (not "Trading Bot")
+
+**Why:** tkinter often broken (missing TK libs), PyQt5/customtkinter not installed, no Rust toolchain for Tauri. pywebview installs cleanly into venv.
+
+**Critical fixes:**
+1. `sys.path.insert(0, venv_site_packages)` at VERY TOP of `app.py` (before import flask)
+2. `price_html(ticker, price)` takes ticker as first arg — reverse-lookup from price fails when no data
+3. CWD independence: `os.path.dirname(os.path.abspath(__file__))` for all file paths
+4. Bot runs as daemon thread; GUI_MODE=True skips signal handlers and blocking input()
+5. Schwab returns `400` on `?fields=portfolio` or any `?fields=<key>` — fetch full response and parse manually
+6. `tick()` must always reschedule (try/except + reschedule in finally) or GUI freezes on error
+7. `stop_bot()` must set `state['bot_running']=False` immediately — users reject delayed button flips
+8. Account values come from `securitiesAccount.currentBalances` or `initialBalances` (try both); fallback `value=cash` if no positions
+
+**User preferences (2026-09-17):**
+- No duplicate UI sections — removed top `No open positions` box and bottom status-bar
+- No `7c` column — removed from BID/ASK table
+- **No chart column** — user removed both candles and bars; table is Symbol + Price only
+- Window/repo name: **GlassTB**
+- Repo: https://github.com/re-glass/GlassTB
+
+## Integrating Bot + GUI
+
+For a single app that combines the trading bot and dashboard:
+
+- Run `TradingBot.run()` in a background daemon thread
+- Expose `/api/bot/start`, `/api/bot/stop`, `/api/bot/status` Flask routes
+- Render bot control panel (Start/Stop buttons, status indicator, strategy/mode) on dashboard
+- Render trade log panel (last 50 trades with time, symbol, side, qty, price, P&L, reason)
+- Use `Config.GUI_MODE = True` to disable blocking `input()` prompts (auto-continue on daily loss)
+- Skip signal handlers in GUI mode (only main thread can set signals)
+
+See `references/gui-bot-integration.md` for the complete integration pattern including thread management, Flask routes, HTML/JS for bot control panel, and state management.
+
 ## See Also
 
 - `references/schwab-api-endpoints.md` — Endpoint reference with verified URLs (CRITICAL: `/trader/v1` not `/v1`)
@@ -241,6 +300,7 @@ Top performers from a session backtest:
 - `references/live-vs-stale-prices.md` — Quote response structure: `quote.lastPrice` (live) vs `extended.lastPrice` (stale)
 - `references/auth-code-parsing.md` — How to strip `&session=...` from auth codes
 - `references/multi-strategy-testing.md` — Strategy definitions, symbol formats, backtest results
+- `references/gui-flask-pywebview.md` — Cross-platform GUI: Flask + pywebview native window, mockup layout
 - `templates/live_bot.py` — Working bot template
 - `scripts/verify_connection.py` — Diagnostic script to test API connectivity
 

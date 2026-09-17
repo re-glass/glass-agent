@@ -1,7 +1,3 @@
-Day trader with Schwab (<$1000), trades FAANG + futures on 1-min. Fully autonomous execution, paper trade first. Risk: 2%/5%/max 2 pos. GitHub: re-glass. PDT repealed June 2026.
+User: Schwab day trader (<$1000), FAANG + futures, 1-min scalping. Risk: 2%/5%/max 2 pos. Fully autonomous, paper first. GitHub: re-glass (repos: TradingBot-code, glass-agent). PDT repealed June 2026. Prefers concise/direct comms, speed over perfection. Cross-platform GUI (Flask + pywebview, native window, any OS). Mockup-driven: match visual refs EXACTLY (layout, colors, borders, text, chart style). Two-repo separation required.
 §
-User: day trader, small Schwab account (<$1000), FAANG 1-min scalping. Risk: 2%/5%/max 2 pos. Fully autonomous. GitHub: re-glass. Values safety, verification, direct comms. PDT rule repealed June 2026.
-§
-User wants fully autonomous trading execution — no trade-by-trade confirmation. Paper trade first, then go live. Values safety features: graceful shutdown, position persistence, risk management. Interested in futures for nearly 24/7 trading. Uses GitHub for code storage (repos: TradingBot-code, glass-agent). Prefers Schwab as broker.
-§
-Expects code to work — verify before declaring done. Diagnose and fix bugs immediately. Prefers direct communication without unnecessary explanation. Values safety: graceful shutdown, position persistence. Interested in futures for 24/7 trading.
+User prefers: functional-first delivery ("get it in a functional state quickly"), minimal/no duplicate UI sections, concise responses, direct comms. Dislikes: extra/redundant text, duplication, unnecessary explanation. Pivoted from TUI to cross-platform GUI (Flask + pywebview). Wants easy launch (launch.sh). Created GitHub repo GlassTB (new repo requested specifically).

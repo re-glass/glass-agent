@@ -117,6 +117,19 @@ Before going live with any trading bot:
 4. **Log everything** — every signal, order, fill, and error
 5. **Have a kill switch** — daily loss limit + manual interrupt (Ctrl+C)
 
+## Cross-Platform GUI / Dashboard
+
+For building a native-window dashboard that runs on any PC:
+
+- **Stack:** Flask (backend API) + pywebview (native window) + vanilla JS frontend
+- **Why:** tkinter broken (missing TK libs), PyQt5 not installed, no Rust for Tauri
+- **Architecture:** JS shell (`dashboard.html`) polls `/api/scene` every 3s, injects fragment into `#root`
+- **Mockup layout:** SCALPING BOT title same line as Cash/BP/Value/Day PnL, light blue borders (`#5a7a9a`), green/blue data (`#7ec8e3`), dark background (`#0a0a12`)
+- **Charts:** `/YM` `/NQ` `/CL` `/SI` = horizontal bar; `/GC` `/ES` = OHLC candlestick with wicks
+- **Launch:** `chmod +x launch.sh && ./launch.sh`
+
+See `references/faang-scalping-session.md` for session details.
+
 ## Pitfalls
 
 1. **yfinance 1m data:** Don't use `yf.download()` for intraday. Use `Ticker.history()`.
@@ -125,3 +138,5 @@ Before going live with any trading bot:
 4. **Position tracking:** Never place orders without tracking open positions. Prevents duplicate entries and enforces risk limits.
 5. **Market hours:** Check market hours (9:30 AM - 4:00 PM ET) before trading. Don't hold positions overnight unless intended.
 6. **Settlement:** Cash accounts have T+1 settlement. Don't sell unsettled shares.
+7. **GUI import order:** `sys.path.insert(0, venv_site_packages)` MUST be at top of `app.py` before any imports.
+8. **price_html ticker arg:** Pass `ticker` as first arg — reverse-lookup from price fails when no data loaded.

@@ -95,9 +95,12 @@ Schwab returns 404 on ALL endpoints (quotes, price history, accountNumbers) unti
 
 https://github.com/re-glass/TradingBot-code.git
 
-## Status (Last Updated: 2026-09-11)
+## Status (Last Updated: 2026-09-17)
 
 - Bot code complete and verified (6/6 tests pass)
+- GUI built: Flask + pywebview native window, dark btop-style dashboard
+- Mockup layout matched (SCALPING BOT same line, light blue borders, candle/bar charts)
+- launch.sh created for easy launch (`./launch.sh`)
 - Paper trading mode enabled
-- Waiting for Schwab market data approval
-- User plans to paper trade for 2-4 weeks before considering live trading
+- Commits: ed45904, f1e08f5, b10705a (GUI), b10705a (launch.sh)
+- PDT rule repealed June 2026 — no $25k minimum for day trading

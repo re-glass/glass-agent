@@ -235,8 +235,8 @@ Static scripts (like `scripts/verify_bot.py`) go stale. Writing fresh tests for 
 - Must reset daily for intraday strategies
 - Use typical price: `(High + Low + Close) / 3`
 - Cumulative volume * typical price / cumulative volume
-
 ## File Structure
+
 ```
 trading-bot/
 ├── live_bot.py              # Main bot with strategy + API client
@@ -246,6 +246,17 @@ trading-bot/
 ├── .gitignore               # Exclude tokens, venv, data files
 └── README.md                # Strategy overview
 ```
+
+## GUI Integration (Optional)
+
+For a single cohesive app combining bot + dashboard:
+
+- Use Flask + pywebview (cross-platform native window)
+- Run `TradingBot.run()` in a background daemon thread
+- Expose `/api/bot/start`, `/api/bot/stop`, `/api/bot/status` API routes
+- Add `Config.GUI_MODE = True` to disable blocking `input()` prompts
+
+See `schwab-trader-api/references/gui-bot-integration.md` for the complete pattern.
 
 ## Dependencies
 ```
